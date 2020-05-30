@@ -60,7 +60,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: e0f5dd2ff5d88ed4ea92e31c8fdcd158, type: 2}
+  - {fileID: 2100000, guid: 9b8e7ad6735e73942a7ca681cb6b0f57, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -95,10 +95,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   bottom: 0.5
   top: 0
-  materials:
-  - {fileID: 2100000, guid: edad24589e2cce14b9f15780eb3bda50, type: 2}
-  - {fileID: 2100000, guid: a40fe4df70d3ac245b3eefae0ff9693b, type: 2}
-  - {fileID: 2100000, guid: 2c455c9f0b1ad2e478b328c56377c40a, type: 2}
 --- !u!64 &3414949774928115213
 MeshCollider:
   m_ObjectHideFlags: 0

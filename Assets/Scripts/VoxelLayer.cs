@@ -120,7 +120,7 @@ public class VoxelLayer : MonoBehaviour
     private void CreateChunk(int i, int x, int y,float z, int matID, bool isLast)
     {
         VoxelGrid chunk = Instantiate(voxelGridPrefab) as VoxelGrid;
-        chunk.Initialize(voxelResolution, chunkSize, maxFeatureAngle, matID, isLast, InitCallback);
+        chunk.Initialize(voxelResolution, chunkSize, maxFeatureAngle, matID, isLast ,InitCallback);
         chunk.transform.parent = transform;
         chunk.transform.localPosition = new Vector3(x * chunkSize - halfSize, y * chunkSize - halfSize, z);
         chunks[i] = chunk;

@@ -38,7 +38,11 @@ public class VoxelStencilCircle : VoxelStencil
                 if (xMin.xEdge == float.MinValue || xMin.xEdge < x)
                 {
                     xMin.xEdge = x;
-                    xMin.xNormal = ComputeNormal(x, xMin.position.y);
+                    xMin.xNormal = ComputeNormal(x, xMin.position.y, xMax);
+                }
+                else
+                {
+                    ValidateHorizontalNormal(xMin, xMax);
                 }
             }
         }
@@ -51,7 +55,11 @@ public class VoxelStencilCircle : VoxelStencil
                 if (xMin.xEdge == float.MinValue || xMin.xEdge > x)
                 {
                     xMin.xEdge = x;
-                    xMin.xNormal = ComputeNormal(x, xMin.position.y);
+                    xMin.xNormal = ComputeNormal(x, xMin.position.y, xMin);
+                }
+                else
+                {
+                    ValidateHorizontalNormal(xMin, xMax);
                 }
             }
         }
@@ -70,7 +78,11 @@ public class VoxelStencilCircle : VoxelStencil
                 if (yMin.yEdge == float.MinValue || yMin.yEdge < y)
                 {
                     yMin.yEdge = y;
-                    yMin.yNormal = ComputeNormal(yMin.position.x, y);
+                    yMin.yNormal = ComputeNormal(yMin.position.x, y, yMax);
+                }
+                else
+                {
+                    ValidateVerticalNormal(yMin, yMax);
                 }
             }
         }
@@ -83,15 +95,19 @@ public class VoxelStencilCircle : VoxelStencil
                 if (yMin.yEdge == float.MinValue || yMin.yEdge > y)
                 {
                     yMin.yEdge = y;
-                    yMin.yNormal = ComputeNormal(yMin.position.x, y);
+                    yMin.yNormal = ComputeNormal(yMin.position.x, y, yMin);
+                }
+                else
+                {
+                    ValidateVerticalNormal(yMin, yMax);
                 }
             }
         }
     }
 
-    private Vector3 ComputeNormal(float x, float y)
+    private Vector3 ComputeNormal(float x, float y, Voxel other)
     {
-        if (fillType)
+        if (fillType == true && other.state == false)
         {
             return new Vector2(x - centerX, y - centerY).normalized;
         }

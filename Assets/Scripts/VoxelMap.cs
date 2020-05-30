@@ -22,23 +22,23 @@ public class VoxelMap : MonoBehaviour
 
     public static int fillTypeIndex = 1, radiusIndex = 4, stencilIndex = 1;
 
-   /* private void OnGUI()
-    {
-        GUILayout.BeginArea(new Rect(4f, 4f, 150f, 500f));
-        GUILayout.Label("Fill Type");
-        fillTypeIndex = GUILayout.SelectionGrid(fillTypeIndex, fillTypeNames, 2);
-        GUILayout.Label("Radius");
-        radiusIndex = GUILayout.SelectionGrid(radiusIndex, radiusNames, 6);
-        GUILayout.Label("Stencil");
-        stencilIndex = GUILayout.SelectionGrid(stencilIndex, stencilNames, 2);
-        GUILayout.EndArea();
-    }*/
+    /* private void OnGUI()
+     {
+         GUILayout.BeginArea(new Rect(4f, 4f, 150f, 500f));
+         GUILayout.Label("Fill Type");
+         fillTypeIndex = GUILayout.SelectionGrid(fillTypeIndex, fillTypeNames, 2);
+         GUILayout.Label("Radius");
+         radiusIndex = GUILayout.SelectionGrid(radiusIndex, radiusNames, 6);
+         GUILayout.Label("Stencil");
+         stencilIndex = GUILayout.SelectionGrid(stencilIndex, stencilNames, 2);
+         GUILayout.EndArea();
+     }*/
     #endregion
 
     private List<VoxelLayer> layers;
     public CameraControler cameraControler;
     public VoxelLayer voxelLayerPrefab;
-
+    public Material material;
     public Transform[] stencilVisualizations;
     private float halfSize;
     private float voxelSize;
@@ -48,18 +48,20 @@ public class VoxelMap : MonoBehaviour
         new VoxelStencilCircle()
     };
 
-    private int starterLayerID;
+    private int currentActiveID;
     private Vector3 scale;
     private Vector3 gizmoCenter;
-    private List<VoxelLayer> activeLayers;
+    private VoxelLayer activeLayer;
     private ClickState clickState;
 
     private const int layersCount = 3;
     void Awake()
     {
         layers = new List<VoxelLayer>();
-        LayerData data = new LayerData();
-        activeLayers = new List<VoxelLayer>();
+        System.Random randomSequence = new System.Random();
+
+        LayerData data = new LayerData(randomSequence);
+
         ResetActiveLayers();
         clickState = ClickState.NONE;
         // cameraControler.Initialze(new Vector2(data.chunkResolutionX * data.chunkSize / 2, data.chunkResolutionY));
@@ -67,23 +69,21 @@ public class VoxelMap : MonoBehaviour
         voxelSize = data.chunkSize / data.voxelResolution;
 
         float zSize = 0.5f;
-
+     
         for (int i = 0; i < layersCount; i++)
         {
-            data.zOffset = zSize * i;
-            data.matID = i;
-            data.isLast = i == layersCount-1;
-
+            data = new LayerData(randomSequence) {zOffset = zSize * i, isLast = i == layersCount - 1};
+            
             layers.Add(Instantiate(voxelLayerPrefab) as VoxelLayer);
 
-            layers[i].Init(data,i);
+            layers[i].Init(data, i);
         }
-        
+
     }
 
     private void Update()
     {
-        
+
 
         if (Application.isEditor)
         {
@@ -117,9 +117,9 @@ public class VoxelMap : MonoBehaviour
                     ResetActiveLayers();
                     clickState = ClickState.UP;
                 }
-                else 
+                else
                     clickState = ClickState.HOLD;
-               
+
             }
             else
                 clickState = ClickState.NONE;
@@ -165,14 +165,12 @@ public class VoxelMap : MonoBehaviour
                 {
                     CylinderCast(touch.position);
 
-                    for (int i = 0; i < activeLayers.Count; i++)
-                    {
-                        VoxelStencil activeStencil = stencils[stencilIndex];
-                        activeStencil.Initialize(fillTypeIndex == 0, (radiusIndex + 0.5f) * voxelSize);
-                        activeStencil.SetCenter(center.x, center.y);
+                    VoxelStencil activeStencil = stencils[stencilIndex];
+                    activeStencil.Initialize(fillTypeIndex == 0, (radiusIndex + 0.5f) * voxelSize);
+                    activeStencil.SetCenter(center.x, center.y);
 
-                        activeLayers[i].EditVoxels(center, activeStencil);
-                    }
+                    activeLayer.EditVoxels(center, activeStencil);
+
                 }
             }
         }
@@ -189,7 +187,7 @@ public class VoxelMap : MonoBehaviour
             Vector3 singleRayCenter = transform.InverseTransformPoint(singleRayHitInfo.point);
             gizmoCenter = singleRayCenter;
             Vector3 center = singleRayCenter;
-               Debug.DrawRay(ray.origin, ray.direction * 20, Color.red);
+            Debug.DrawRay(ray.origin, ray.direction * 20, Color.red);
             #region used for stencil visualization calculations
             center.x += halfSize;
             center.y += halfSize;
@@ -199,22 +197,20 @@ public class VoxelMap : MonoBehaviour
             {
                 CylinderCast(Input.mousePosition);
 
-                for (int i = 0; i < activeLayers.Count; i++)
-                {
-                    VoxelStencil activeStencil = stencils[stencilIndex];
-                    activeStencil.Initialize(fillTypeIndex == 0, (radiusIndex + 0.5f) * voxelSize);
-                    activeStencil.SetCenter(center.x, center.y);
+                VoxelStencil activeStencil = stencils[stencilIndex];
+                activeStencil.Initialize(fillTypeIndex == 0, (radiusIndex + 0.5f) * voxelSize);
+                activeStencil.SetCenter(center.x, center.y);
 
-                    activeLayers[i].EditVoxels(center, activeStencil);
-                }
+                activeLayer.EditVoxels(center, activeStencil);
             }
 
             #region used for stencil visualization calculations
 
             center.x -= halfSize;
             center.y -= halfSize;
+            center.z -= 0.15f;
             visualization.localPosition = center;
-            visualization.localScale = new Vector3(scale.x, 0.01f, scale.z);
+            visualization.localScale = new Vector3(scale.x, 0.05f, scale.z);
 
             #endregion
 
@@ -261,11 +257,11 @@ public class VoxelMap : MonoBehaviour
     {
         if (layerToTest != null)
         {
-            if (layerToTest.ID < starterLayerID && !activeLayers.Contains(layerToTest))
+            if (layerToTest.ID < currentActiveID)
             {
-                activeLayers.Add(layerToTest);
-                if (starterLayerID == layersCount)
-                    starterLayerID = layerToTest.ID;
+                activeLayer = layerToTest;
+                // if (currentActiveID == layersCount)
+                currentActiveID = layerToTest.ID;
             }
         }
     }
@@ -287,11 +283,11 @@ public class VoxelMap : MonoBehaviour
         }
         return null;
     }
-   
+
     void ResetActiveLayers()
     {
-        activeLayers.Clear();
-        starterLayerID = layersCount;
+        // activeLayers.Clear();
+        currentActiveID = layersCount;
     }
     void OnDrawGizmos()
     {
@@ -305,6 +301,14 @@ public class VoxelMap : MonoBehaviour
 
 public class LayerData
 {
+    public LayerData(System.Random randomSequence)
+    {
+        matID = randomSequence.Next(1, diffColor + 1);
+      
+        
+    }
+
+    private const int diffColor = 5;
     public bool isLast;
     public float zOffset;
     public int matID;

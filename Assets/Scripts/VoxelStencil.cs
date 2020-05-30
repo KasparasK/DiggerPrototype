@@ -75,6 +75,20 @@ public class VoxelStencil
         }
 
     }
+    protected static void ValidateHorizontalNormal(Voxel xMin, Voxel xMax)
+    {
+        if (xMin.state != xMax.state && xMax.state)
+        {
+            if (xMin.xNormal.x > 0f)
+            {
+                xMin.xNormal = -xMin.xNormal;
+            }
+        }
+        else if (xMin.xNormal.x < 0f)
+        {
+            xMin.xNormal = -xMin.xNormal;
+        }
+    }
     protected virtual void FindHorizontalCrossing(Voxel xMin, Voxel xMax)
     {
         if (xMin.position.y < YStart || xMin.position.y > YEnd)
@@ -88,7 +102,11 @@ public class VoxelStencil
                 if (xMin.xEdge == float.MinValue || xMin.xEdge < XEnd)
                 {
                     xMin.xEdge = XEnd;
-                    xMin.xNormal = new Vector2(fillType ? 1f : -1f, 0f);
+                    xMin.xNormal = new Vector2(fillType == true && xMax.state == false ? 1f : -1f, 0f);
+                }
+                else
+                {
+                    ValidateHorizontalNormal(xMin, xMax);
                 }
             }
         }
@@ -99,7 +117,11 @@ public class VoxelStencil
                 if (xMin.xEdge == float.MinValue || xMin.xEdge > XStart)
                 {
                     xMin.xEdge = XStart;
-                    xMin.xNormal = new Vector2(fillType ? -1f : 1f, 0f);
+                    xMin.xNormal = new Vector2(fillType == true && xMin.state == false ? -1f : 1f, 0f);
+                }
+                else
+                {
+                    ValidateHorizontalNormal(xMin, xMax);
                 }
             }
         }
@@ -130,7 +152,11 @@ public class VoxelStencil
                 if (yMin.yEdge == float.MinValue || yMin.yEdge < YEnd)
                 {
                     yMin.yEdge = YEnd;
-                    yMin.yNormal = new Vector2(0f, fillType ? 1f : -1f);
+                    yMin.yNormal = new Vector2(0f, fillType == true && yMax.state == false ? 1f : -1f);
+                }
+                else
+                {
+                    ValidateVerticalNormal(yMin, yMax);
                 }
             }
         }
@@ -141,9 +167,28 @@ public class VoxelStencil
                 if (yMin.yEdge == float.MinValue || yMin.yEdge > YStart)
                 {
                     yMin.yEdge = YStart;
-                    yMin.yNormal = new Vector2(0f, fillType ? -1f : 1f);
+                    yMin.yNormal = new Vector2(0f, fillType == true && yMin.state == false ? -1f : 1f);
+                }
+                else
+                {
+                    ValidateVerticalNormal(yMin, yMax);
                 }
             }
+        }
+    }
+
+    protected static void ValidateVerticalNormal(Voxel yMin, Voxel yMax)
+    {
+        if (yMin.state != yMax.state && yMax.state)
+        {
+            if (yMin.yNormal.y > 0f)
+            {
+                yMin.yNormal = -yMin.yNormal;
+            }
+        }
+        else if (yMin.yNormal.y < 0f)
+        {
+            yMin.yNormal = -yMin.yNormal;
         }
     }
 }

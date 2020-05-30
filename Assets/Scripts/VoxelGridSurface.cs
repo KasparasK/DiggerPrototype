@@ -16,11 +16,12 @@ public class VoxelGridSurface : MonoBehaviour
     private int[] cornersMin, cornersMax;
     private int[] xEdgesMin, xEdgesMax;
     private int yEdgeMin, yEdgeMax;
-    public List<Material> materials;
     private bool isLast;
+    private int matID;
     public void Initialize(int resolution, int matID,bool isLast,Action callback)
     {
         meshCollider = GetComponent<MeshCollider>();
+        this.matID = matID;
         this.isLast = isLast;
         GetComponent<MeshFilter>().mesh = mesh = new Mesh();
         mesh.name = "VoxelGridSurface Mesh";
@@ -30,17 +31,27 @@ public class VoxelGridSurface : MonoBehaviour
         cornersMin = new int[resolution + 1];
         xEdgesMin = new int[resolution];
         xEdgesMax = new int[resolution];
-        GetComponent<MeshRenderer>().material = materials[matID];
 
         callback();
     }
+    Vector2[] GenerateUVs()
+    {
+        Vector2[] uvs = new Vector2[vertices.Count];
+        Vector2 color = new Vector2(((16f * (float)matID)-8f) / 80f,0.5f);
+        for (int i = 0; i < uvs.Length; i++)
+        {
+            uvs[i] = color;
+        }
 
+
+        return uvs;
+    }
     public void Clear()
     {
         vertices.Clear();
         triangles.Clear();
         mesh.Clear();
-
+        
         if (meshCollider == null)
             meshCollider = GetComponent<MeshCollider>();
         meshCollider.sharedMesh = null;
@@ -56,6 +67,11 @@ public class VoxelGridSurface : MonoBehaviour
                 meshCollider = GetComponent<MeshCollider>();
             meshCollider.sharedMesh = mesh;
         }
+
+        mesh.uv = GenerateUVs();
+
+      //  mesh.RecalculateNormals();
+      mesh.RecalculateNormals(0);
     }
 
     public void CacheFirstCorner(Voxel voxel)

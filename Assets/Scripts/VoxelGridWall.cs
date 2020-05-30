@@ -13,20 +13,32 @@ public class VoxelGridWall : MonoBehaviour
     private int[] xEdgesMin, xEdgesMax;
     private int yEdgeMin, yEdgeMax;
     public float bottom, top;// bottom - sienos storis
-    public List<Material> materials;
-
+    private int matID;
     public void Initialize(int resolution, int matID,Action callback)
     {
         GetComponent<MeshFilter>().mesh = mesh = new Mesh();
-        
+        this.matID = matID;
         mesh.name = "VoxelGridWall Mesh";
         vertices = new List<Vector3>();
         normals = new List<Vector3>();
         triangles = new List<int>();
         xEdgesMin = new int[resolution];
         xEdgesMax = new int[resolution];
-        GetComponent<MeshRenderer>().material = materials[matID];
         callback();
+    }
+
+    Vector2[] GenerateUVs()
+    {
+        Vector2[] uvs = new Vector2[vertices.Count];
+        Vector2 color = new Vector2(((16f * (float)matID) - 8f) / 80f, 0.5f);
+
+        for (int i = 0; i < uvs.Length; i++)
+        {
+            uvs[i] = color;
+        }
+
+
+        return uvs;
     }
 
     public void Clear()
@@ -43,7 +55,7 @@ public class VoxelGridWall : MonoBehaviour
         mesh.vertices = vertices.ToArray();
         mesh.normals = normals.ToArray();
         mesh.triangles = triangles.ToArray();
-
+        mesh.uv = GenerateUVs();
     }
 
     public void CacheXEdge(int i, Voxel voxel)
