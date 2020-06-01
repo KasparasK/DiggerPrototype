@@ -12,10 +12,12 @@ public class VoxelGridWall : MonoBehaviour
 
     private int[] xEdgesMin, xEdgesMax;
     private int yEdgeMin, yEdgeMax;
-    public float bottom, top;// bottom - sienos storis
+    private float bottom;
+   public float top;// bottom - sienos storis
     private int matID;
     public void Initialize(int resolution, int matID,Action callback)
     {
+        bottom = VoxelMap.zSize;
         GetComponent<MeshFilter>().mesh = mesh = new Mesh();
         this.matID = matID;
         mesh.name = "VoxelGridWall Mesh";
@@ -47,6 +49,7 @@ public class VoxelGridWall : MonoBehaviour
         normals.Clear();
         triangles.Clear();
         mesh.Clear();
+        
 
     }
 
@@ -56,6 +59,9 @@ public class VoxelGridWall : MonoBehaviour
         mesh.normals = normals.ToArray();
         mesh.triangles = triangles.ToArray();
         mesh.uv = GenerateUVs();
+
+        mesh.RecalculateNormals();
+
     }
 
     public void CacheXEdge(int i, Voxel voxel)

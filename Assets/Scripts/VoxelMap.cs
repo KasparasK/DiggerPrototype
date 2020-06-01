@@ -35,10 +35,17 @@ public class VoxelMap : MonoBehaviour
      }*/
     #endregion
 
+    public Renderer sword;
+    public Renderer sword1;
+    public Renderer sword2;
+    public Renderer sword3;
+
+    public Camera cam;
+
     private List<VoxelLayer> layers;
     public CameraControler cameraControler;
     public VoxelLayer voxelLayerPrefab;
-    public Material material;
+
     public Transform[] stencilVisualizations;
     private float halfSize;
     private float voxelSize;
@@ -55,6 +62,7 @@ public class VoxelMap : MonoBehaviour
     private ClickState clickState;
 
     private const int layersCount = 3;
+    public static float zSize = 0.5f;
     void Awake()
     {
         layers = new List<VoxelLayer>();
@@ -68,8 +76,6 @@ public class VoxelMap : MonoBehaviour
         halfSize = data.chunkSize * 0.5f;
         voxelSize = data.chunkSize / data.voxelResolution;
 
-        float zSize = 0.5f;
-     
         for (int i = 0; i < layersCount; i++)
         {
             data = new LayerData(randomSequence) {zOffset = zSize * i, isLast = i == layersCount - 1};
@@ -79,8 +85,23 @@ public class VoxelMap : MonoBehaviour
             layers[i].Init(data, i);
         }
 
+        FrustumTest();
     }
 
+
+    void FrustumTest()
+    {
+        Plane[] planes = GeometryUtility.CalculateFrustumPlanes(Camera.main);
+
+        // Create a "Plane" GameObject aligned to each of the calculated planes
+        for (int i = 0; i < 6; ++i)
+        {
+            GameObject p = GameObject.CreatePrimitive(PrimitiveType.Plane);
+            p.name = "Plane " + i.ToString();
+            p.transform.position = -planes[i].normal * planes[i].distance;
+            p.transform.rotation = Quaternion.FromToRotation(Vector3.up, planes[i].normal);
+        }
+    }
     private void Update()
     {
 
@@ -141,13 +162,20 @@ public class VoxelMap : MonoBehaviour
         {
             MobileControls();
         }
+        /*
+    Debug.Log(IsFullyVisible(sword, cam) == true?"visible":"0 not visible");
+    Debug.Log(IsFullyVisible(sword1, cam) == true ? "visible" : "1 not visible");
+    Debug.Log(IsFullyVisible(sword2, cam) == true ? "visible" : "2 not visible");
+    Debug.Log(IsFullyVisible(sword3, cam) == true ? "visible" : "3 not visible");
+    */
+
     }
     void MobileControls()
     {
         if (clickState != ClickState.NONE || clickState != ClickState.UP)
         {
             Touch touch = Input.GetTouch(0);
-            Ray ray = Camera.main.ScreenPointToRay(touch.position);
+            Ray ray = cam.ScreenPointToRay(touch.position);
             scale = Vector3.one * ((radiusIndex + 0.5f) * voxelSize * 2f);
             RaycastHit singleRayHitInfo;
 
@@ -178,8 +206,8 @@ public class VoxelMap : MonoBehaviour
     void PCcontrolsCylinder()
     {
         Transform visualization = stencilVisualizations[stencilIndex];
-        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-        scale = Vector3.one * ((radiusIndex + 0.5f) * voxelSize * 2f);
+        Ray ray = cam.ScreenPointToRay(Input.mousePosition);
+        scale = Vector3.one*2;// * ((radiusIndex + 0.5f) * voxelSize * 2f);
         RaycastHit singleRayHitInfo;
 
         if (Physics.Raycast(ray, out singleRayHitInfo))
@@ -188,6 +216,7 @@ public class VoxelMap : MonoBehaviour
             gizmoCenter = singleRayCenter;
             Vector3 center = singleRayCenter;
             Debug.DrawRay(ray.origin, ray.direction * 20, Color.red);
+
             #region used for stencil visualization calculations
             center.x += halfSize;
             center.y += halfSize;
@@ -198,7 +227,7 @@ public class VoxelMap : MonoBehaviour
                 CylinderCast(Input.mousePosition);
 
                 VoxelStencil activeStencil = stencils[stencilIndex];
-                activeStencil.Initialize(fillTypeIndex == 0, (radiusIndex + 0.5f) * voxelSize);
+                activeStencil.Initialize(fillTypeIndex == 0, 1);
                 activeStencil.SetCenter(center.x, center.y);
 
                 activeLayer.EditVoxels(center, activeStencil);
@@ -208,7 +237,7 @@ public class VoxelMap : MonoBehaviour
 
             center.x -= halfSize;
             center.y -= halfSize;
-            center.z -= 0.15f;
+            center.z -= 0.30f;
             visualization.localPosition = center;
             visualization.localScale = new Vector3(scale.x, 0.05f, scale.z);
 
@@ -226,7 +255,7 @@ public class VoxelMap : MonoBehaviour
     {
         Vector3 mouse = clickPos;
         mouse.z = 10;
-        mouse = Camera.main.ScreenToWorldPoint(mouse);
+        mouse = cam.ScreenToWorldPoint(mouse);
         mouse.z *= -1;
         Vector3 dir = transform.forward * 20;
         Ray ray = new Ray(mouse, dir);
@@ -295,7 +324,35 @@ public class VoxelMap : MonoBehaviour
         Gizmos.color = Color.red;
         Gizmos.DrawSphere(gizmoCenter, scale.x / 2);
     }
+    public static bool IsFullyVisible(Renderer renderer, Camera camera)
+    {
+        Plane[] planes = GeometryUtility.CalculateFrustumPlanes(camera);
 
+        Bounds bounds = renderer.bounds;
+        Vector3 size = bounds.size;
+        Vector3 min = bounds.min;
+
+        //Calculate the 8 points on the corners of the bounding box
+        List<Vector3> boundsCorners = new List<Vector3>(8) {
+            min,
+            min + new Vector3(0, 0, size.z),
+            min + new Vector3(size.x, 0, size.z),
+            min + new Vector3(size.x, 0, 0),
+        };
+        for (int i = 0; i < 4; i++)
+            boundsCorners.Add(boundsCorners[i] + size.y * Vector3.back);
+
+        //Check each plane on every one of the 8 bounds' corners
+        for (int p = 0; p < planes.Length; p++)
+        {
+            for (int i = 0; i < boundsCorners.Count; i++)
+            {
+                if (planes[p].GetSide(boundsCorners[i]) == false)
+                    return false;
+            }
+        }
+        return true;
+    }
 }
 
 
@@ -314,7 +371,7 @@ public class LayerData
     public int matID;
     public float chunkSize = 2f;
 
-    public int voxelResolution = 15;
+    public int voxelResolution = 10;
 
     public int chunkResolutionX = 4;
     public int chunkResolutionY = 6;
